@@ -1,0 +1,8 @@
+Marca;;;;;;;;;;Categoria;;;;;
+Atributo;Classe;Tipo;Tamanho;Restrições;Descrição;;;;;Atributo;Classe;Tipo;Tamanho;Restrições;Descrição
+id_marca;única;numérico;_;NOT NULL;chave primária;;;;;id_marca;única;numérico;_;NOT NULL;chave primária
+Nome_Marca;simples;texto;255;NOT NULL;nome da marca;;;;;Nome_Marca;simples;texto;255;NOT NULL;nome da marca
+observacoes;simples;texto;-;NOT NULL;obsevações;;;;;observacoes;simples;texto;-;NOT NULL;obsevações
+Marca(id_marca(pk),Nome_marca, observacoes);;;;;;;;;;Marca(id_marca(pk),Nome_marca, observacoes);;;;;
+1FN - Marca(id_marca(pk),Nome_marca, observacoes);;;;;;;;;;1FN - Marca(id_marca(pk),Nome_marca, observacoes);;;;;
+2FN - Marca(id_marca(pk),Nome_marca, observacoes);;;;;;;;;;2FN - Marca(id_marca(pk),Nome_marca, observacoes);;;;;
