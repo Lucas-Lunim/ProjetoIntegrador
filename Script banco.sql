@@ -66,12 +66,8 @@ create table Tipo_Movimentacao(
 create table Cliente(
     id_Cliente int primary key auto_increment, 
     Nome_Cliente varchar(255) not null,       
-    fk_Cidade int not null,
-    observacoes varchar(255),
-    constraint fk_Cidade_Cliente
-        foreign key(fk_Cidade) references Cidade(id_Cidade)
-        on update cascade on delete cascade
-);
+    observacoes varchar(255));
+
 
 
 create table Categoria(
@@ -133,12 +129,26 @@ create table Estoque(
 create table Registros(
     id_Registro int primary key auto_increment,
     fk_Cliente int not null,
+    fk_Cidade_Cliente int not null,
+    fk_Cidade_Fornecedor int not null,
+    fk_Fornecedor int not null,
     Quantidade int not null,
     Data_Movimentacao date not null,
     valor_unitario decimal(10,2) not null,
     fk_Estoque int not null,
     Observacoes varchar(255),
     fk_Produto int not null,
+    
+    constraint fk_Cidade_Cliente 
+    foreign key (fk_Cidade_Cliente) references Cidade (id_Cidade)
+    on delete cascade on update cascade,
+    
+    constraint fk_Cidade_Fornecedor 
+    foreign key (fk_Cidade_Fornecedor) references Cidade (id_Cidade),
+    
+     constraint fk_Fornecedor
+        foreign key (fk_Fornecedor) references Fornecedor (id_Fornecedor)
+        on delete cascade on update cascade,
     
     constraint fk_Registros_Cliente
         foreign key (fk_Cliente) references Cliente (id_Cliente)
