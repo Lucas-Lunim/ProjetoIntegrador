@@ -94,7 +94,7 @@ create table Produto(
     Nome_Produto varchar(255) not null,
     fk_Categoria int not null,   
     fk_Fornecedor int not null,  
-    fk_Marca int not null,
+    -- fk_Marca int not null,
     
     constraint fk_Produto_Categoria 
         foreign key (fk_Categoria) references Categoria (Id_Categoria)
@@ -102,8 +102,8 @@ create table Produto(
     constraint fk_Produto_Fornecedor
         foreign key (fk_Fornecedor) references Fornecedor (Id_Fornecedor)
         on delete cascade on update cascade,
-    constraint fk_Produto_Marca
-        foreign key (fk_Marca) references Marca (id_Marca)
+   constraint fk_Produto_Marca
+       foreign key (fk_Marca) references Marca (id_Marca)
         on delete cascade on update cascade
 );
 
@@ -113,13 +113,10 @@ create table Estoque(
     Estoque_minimo int not null,
     Estoque_maximo int not null,
     Estoque_atual int not null,
-    fk_Prateleira_corredor int not null,
     fk_Produto int not null,
     Observacoes varchar(255),
     
-    constraint fk_Estoque_Prateleiras_corredores
-        foreign key (fk_Prateleira_corredor) references Prateleira_Corredor (Id_Prateleria_Corredor)
-        on delete cascade on update cascade,
+
     constraint fk_Estoque_Produto
         foreign key (fk_Produto) references Produto (id_Produto)
         on delete cascade on update cascade
@@ -138,6 +135,20 @@ create table Registros(
     fk_Estoque int not null,
     Observacoes varchar(255),
     fk_Produto int not null,
+    fk_Prateleira_Corredor int not null,
+	fk_Tipo_Movimentacao int not null,
+    fk_Funcionario int not null,
+    constraint fk_Funcionario_Registro 
+    foreign key (fk_Funcionario) references Funcionario (Id_Funcionario)
+    on delete cascade on update cascade,
+    
+    constraint fk_Tipo_Movimentacao_Registro   
+    foreign key (fk_Tipo_Movimentacao) references Tipo_Movimentacao (Id_Tipo_Movimentacao)
+    on delete cascade on update cascade,
+    
+    constraint fk_Prateleira_Corredor
+    foreign key (fk_Prateleira_Corredor) references Prateleira_Corredor (Id_Prateleria_Corredor)
+    on delete cascade on update cascade,
     
     constraint fk_Cidade_Cliente 
     foreign key (fk_Cidade_Cliente) references Cidade (id_Cidade)
