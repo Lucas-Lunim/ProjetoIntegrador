@@ -1,172 +1,111 @@
-
 -- ====================================================================
--- SCRIPT CORRIGIDO PARA POSTGRESQL / POWER BI
--- Projeto Integrador - AutoMax
--- Baseado no arquivo banco.txt enviado pelo usuário.
+-- SCRIPT DE CRIAÇÃO E INSERÇÃO PARA POSTGRESQL
 -- ====================================================================
--- Objetivo:
--- 1) Criar o banco com nomes/relacionamentos mais consistentes.
--- 2) Evitar erros comuns no Power BI: relacionamentos ambíguos,
---    chaves inconsistentes, sequência SERIAL desatualizada e campos
---    difíceis de consumir.
--- 3) Criar views prontas para o Power BI.
---
--- Como usar:
--- - Crie o banco manualmente no PostgreSQL, por exemplo: projeto_integrador.
--- - Conecte-se nesse banco pelo pgAdmin/DBeaver.
--- - Execute este script inteiro.
--- - No Power BI, prefira carregar as views que começam com vw_powerbi_.
--- ====================================================================
+-- OBS: Crie o banco de dados manualmente na sua ferramenta (ex: pgAdmin)
+-- com o nome "projeto_integrador", conecte-se a ele, e então rode este script.
 
-BEGIN;
-
--- --------------------------------------------------------------------
--- LIMPEZA PARA PERMITIR REEXECUÇÃO DO SCRIPT
--- --------------------------------------------------------------------
-DROP VIEW IF EXISTS vw_powerbi_movimentacoes CASCADE;
-DROP VIEW IF EXISTS vw_powerbi_alerta_estoque CASCADE;
-DROP VIEW IF EXISTS vw_powerbi_calendario CASCADE;
-DROP VIEW IF EXISTS vw_qualidade_dados CASCADE;
-
-DROP TABLE IF EXISTS Registros CASCADE;
-DROP TABLE IF EXISTS Estoque CASCADE;
-DROP TABLE IF EXISTS Produto CASCADE;
-DROP TABLE IF EXISTS Prateleira_Corredor CASCADE;
-DROP TABLE IF EXISTS Fornecedor CASCADE;
-DROP TABLE IF EXISTS Funcionario CASCADE;
-DROP TABLE IF EXISTS Categoria CASCADE;
-DROP TABLE IF EXISTS Cliente CASCADE;
-DROP TABLE IF EXISTS Tipo_Movimentacao CASCADE;
-DROP TABLE IF EXISTS Marca CASCADE;
-DROP TABLE IF EXISTS Cidade CASCADE;
-DROP TABLE IF EXISTS Prateleira CASCADE;
-DROP TABLE IF EXISTS Corredor CASCADE;
-DROP TABLE IF EXISTS Cargo CASCADE;
-
--- --------------------------------------------------------------------
--- 1. CRIAÇÃO DAS TABELAS
--- Observação: PostgreSQL transforma nomes não-aspados em minúsculo.
--- Mantive nomes parecidos com o projeto original, mas corrigi o erro
--- Id_Prateleria_Corredor -> id_Prateleira_Corredor.
--- --------------------------------------------------------------------
-
+-- 1. CRIAÇÃO DAS TABELAS (SCHEMA)
 CREATE TABLE Cargo(
     id_Cargo SERIAL PRIMARY KEY,
     Nome_Cargo VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Cargo_Nome UNIQUE (Nome_Cargo)
+    observacoes VARCHAR(255)
 );
 
 CREATE TABLE Funcionario(
     id_Funcionario SERIAL PRIMARY KEY,
     Nome_Funcionario VARCHAR(255) NOT NULL,
     fk_cargo INTEGER NOT NULL,
-
-    CONSTRAINT fk_Funcionario_Cargo
-        FOREIGN KEY (fk_cargo) REFERENCES Cargo(id_Cargo)
-        ON DELETE RESTRICT ON UPDATE CASCADE
+    
+    CONSTRAINT cs_Funcionario_Cargo
+        FOREIGN KEY (fk_cargo) REFERENCES Cargo(id_Cargo) 
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Corredor(
     id_Corredor SERIAL PRIMARY KEY,
     Nome_Corredor VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Corredor_Nome UNIQUE (Nome_Corredor)
+    observacoes VARCHAR(255)
 );
 
 CREATE TABLE Prateleira(
     id_Prateleira SERIAL PRIMARY KEY,
     Nome_Prateleira VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Prateleira_Nome UNIQUE (Nome_Prateleira)
+    observacoes VARCHAR(255)
 );
 
-CREATE TABLE Prateleira_Corredor(
-    id_Prateleira_Corredor SERIAL PRIMARY KEY,
+CREATE TABLE Prateleira_Corredor( 
+    Id_Prateleria_Corredor SERIAL PRIMARY KEY,
     fk_Prateleira INTEGER NOT NULL,
     fk_Corredor INTEGER NOT NULL,
-
-    CONSTRAINT fk_Prateleira_Corredor_Prateleira
+    
+    CONSTRAINT cs_Prateleira_Prateleira_Corredor
         FOREIGN KEY (fk_Prateleira) REFERENCES Prateleira(id_Prateleira)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT fk_Prateleira_Corredor_Corredor
-        FOREIGN KEY (fk_Corredor) REFERENCES Corredor(id_Corredor)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT uq_Prateleira_Corredor UNIQUE (fk_Prateleira, fk_Corredor)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT cs_Prateleira_Corredor_Corredor
+        FOREIGN KEY (fk_Corredor) REFERENCES Corredor(id_Corredor) 
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Cidade(
     id_Cidade SERIAL PRIMARY KEY,
     Nome_Estado VARCHAR(50) NOT NULL,
     Nome_Cidade VARCHAR(100) NOT NULL,
-    Nome_Pais VARCHAR(50) NOT NULL DEFAULT 'Brazil',
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Cidade UNIQUE (Nome_Estado, Nome_Cidade, Nome_Pais)
+    Nome_Pais VARCHAR(50) NOT NULL,
+    observacoes VARCHAR(255)
 );
 
 CREATE TABLE Marca(
     id_Marca SERIAL PRIMARY KEY,
     Nome_Marca VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Marca_Nome UNIQUE (Nome_Marca)
+    observacoes VARCHAR(255)    
 );
 
 CREATE TABLE Tipo_Movimentacao(
     id_Tipo_Movimentacao SERIAL PRIMARY KEY,
     Tipo_Movimentacao VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Tipo_Movimentacao UNIQUE (Tipo_Movimentacao)
+    observacoes VARCHAR(255)
 );
 
 CREATE TABLE Cliente(
-    id_Cliente SERIAL PRIMARY KEY,
-    Nome_Cliente VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Cliente_Nome UNIQUE (Nome_Cliente)
+    id_Cliente SERIAL PRIMARY KEY, 
+    Nome_Cliente VARCHAR(255) NOT NULL,        
+    observacoes VARCHAR(255)
 );
 
 CREATE TABLE Categoria(
     Id_Categoria SERIAL PRIMARY KEY,
     Nome_Categoria VARCHAR(255) NOT NULL,
-    observacoes VARCHAR(255),
-    CONSTRAINT uq_Categoria_Nome UNIQUE (Nome_Categoria)
+    observacoes VARCHAR(255)
 );
-
+    
 CREATE TABLE Fornecedor(
     Id_Fornecedor SERIAL PRIMARY KEY,
     Nome_Fornecedor VARCHAR(255) NOT NULL,
     fk_Cidade INTEGER NOT NULL,
     observacoes VARCHAR(255),
-
+    
     CONSTRAINT fk_Fornecedor_Cidade
-        FOREIGN KEY (fk_Cidade) REFERENCES Cidade(id_Cidade)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT uq_Fornecedor_Nome UNIQUE (Nome_Fornecedor)
+        FOREIGN KEY (fk_Cidade) REFERENCES Cidade (id_Cidade)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Produto(
     id_Produto SERIAL PRIMARY KEY,
     Cod_Produto VARCHAR(20) NOT NULL,
     Nome_Produto VARCHAR(255) NOT NULL,
-    fk_Categoria INTEGER NOT NULL,
-    fk_Fornecedor INTEGER NOT NULL,
-    fk_Marca INTEGER NOT NULL,
-    observacoes VARCHAR(255),
-
-    CONSTRAINT fk_Produto_Categoria
-        FOREIGN KEY (fk_Categoria) REFERENCES Categoria(Id_Categoria)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
+    fk_Categoria INTEGER NOT NULL,   
+    fk_Fornecedor INTEGER NOT NULL,  
+    fk_Marca INTEGER NOT NULL, -- Removido o comentário para funcionar com a constraint abaixo
+    
+    CONSTRAINT fk_Produto_Categoria 
+        FOREIGN KEY (fk_Categoria) REFERENCES Categoria (Id_Categoria)
+        ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_Produto_Fornecedor
-        FOREIGN KEY (fk_Fornecedor) REFERENCES Fornecedor(Id_Fornecedor)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT fk_Produto_Marca
-        FOREIGN KEY (fk_Marca) REFERENCES Marca(id_Marca)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    -- Cod_Produto NÃO foi deixado como UNIQUE porque a base original possui
-    -- códigos repetidos com produtos/categorias/marcas diferentes.
-    -- Para relacionamento no Power BI, use sempre id_Produto.
-    CONSTRAINT ck_Produto_Codigo_Nao_Vazio CHECK (length(trim(Cod_Produto)) > 0)
+        FOREIGN KEY (fk_Fornecedor) REFERENCES Fornecedor (Id_Fornecedor)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+   CONSTRAINT fk_Produto_Marca
+       FOREIGN KEY (fk_Marca) REFERENCES Marca (id_Marca)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Estoque(
@@ -176,17 +115,12 @@ CREATE TABLE Estoque(
     Estoque_atual INTEGER NOT NULL,
     fk_Produto INTEGER NOT NULL,
     Observacoes VARCHAR(255),
-
+    
     CONSTRAINT fk_Estoque_Produto
-        FOREIGN KEY (fk_Produto) REFERENCES Produto(id_Produto)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT ck_Estoque_Minimo_Positive CHECK (Estoque_minimo >= 0),
-    CONSTRAINT ck_Estoque_Maximo_Positive CHECK (Estoque_maximo >= 0),
-    CONSTRAINT ck_Estoque_Atual_Positive CHECK (Estoque_atual >= 0),
-    CONSTRAINT ck_Estoque_Maximo_Maior_Minimo CHECK (Estoque_maximo >= Estoque_minimo)
+        FOREIGN KEY (fk_Produto) REFERENCES Produto (id_Produto)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
-
+    
 CREATE TABLE Registros(
     id_Registro SERIAL PRIMARY KEY,
     fk_Cliente INTEGER NOT NULL,
@@ -195,54 +129,50 @@ CREATE TABLE Registros(
     fk_Fornecedor INTEGER NOT NULL,
     Quantidade INTEGER NOT NULL,
     Data_Movimentacao DATE NOT NULL,
-    valor_unitario NUMERIC(12,2) NOT NULL,
+    valor_unitario DECIMAL(10,2) NOT NULL,
     fk_Estoque INTEGER NOT NULL,
     Observacoes VARCHAR(255),
     fk_Produto INTEGER NOT NULL,
     fk_Prateleira_Corredor INTEGER NOT NULL,
     fk_Tipo_Movimentacao INTEGER NOT NULL,
     fk_Funcionario INTEGER NOT NULL,
-
-    CONSTRAINT fk_Registros_Funcionario
-        FOREIGN KEY (fk_Funcionario) REFERENCES Funcionario(id_Funcionario)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT fk_Registros_Tipo_Movimentacao
-        FOREIGN KEY (fk_Tipo_Movimentacao) REFERENCES Tipo_Movimentacao(id_Tipo_Movimentacao)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT fk_Registros_Prateleira_Corredor
-        FOREIGN KEY (fk_Prateleira_Corredor) REFERENCES Prateleira_Corredor(id_Prateleira_Corredor)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT fk_Registros_Cidade_Cliente
-        FOREIGN KEY (fk_Cidade_Cliente) REFERENCES Cidade(id_Cidade)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT fk_Registros_Cidade_Fornecedor
-        FOREIGN KEY (fk_Cidade_Fornecedor) REFERENCES Cidade(id_Cidade)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT fk_Registros_Fornecedor
-        FOREIGN KEY (fk_Fornecedor) REFERENCES Fornecedor(id_Fornecedor)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
+    
+    CONSTRAINT fk_Funcionario_Registro 
+        FOREIGN KEY (fk_Funcionario) REFERENCES Funcionario (Id_Funcionario)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    CONSTRAINT fk_Tipo_Movimentacao_Registro   
+        FOREIGN KEY (fk_Tipo_Movimentacao) REFERENCES Tipo_Movimentacao (Id_Tipo_Movimentacao)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    CONSTRAINT fk_Prateleira_Corredor
+        FOREIGN KEY (fk_Prateleira_Corredor) REFERENCES Prateleira_Corredor (Id_Prateleria_Corredor)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    CONSTRAINT fk_Cidade_Cliente 
+        FOREIGN KEY (fk_Cidade_Cliente) REFERENCES Cidade (id_Cidade)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    CONSTRAINT fk_Cidade_Fornecedor 
+        FOREIGN KEY (fk_Cidade_Fornecedor) REFERENCES Cidade (id_Cidade)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
+     CONSTRAINT fk_Fornecedor
+        FOREIGN KEY (fk_Fornecedor) REFERENCES Fornecedor (id_Fornecedor)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    
     CONSTRAINT fk_Registros_Cliente
-        FOREIGN KEY (fk_Cliente) REFERENCES Cliente(id_Cliente)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
+        FOREIGN KEY (fk_Cliente) REFERENCES Cliente (id_Cliente)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+        
     CONSTRAINT fk_Registros_Estoque
-        FOREIGN KEY (fk_Estoque) REFERENCES Estoque(id_Estoque)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
+        FOREIGN KEY (fk_Estoque) REFERENCES Estoque (id_Estoque) 
+        ON DELETE CASCADE ON UPDATE CASCADE,  
+        
     CONSTRAINT fk_Registros_Produto
-        FOREIGN KEY (fk_Produto) REFERENCES Produto(id_Produto)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-
-    CONSTRAINT ck_Registros_Quantidade_Nao_Negativa CHECK (Quantidade >= 0),
-    CONSTRAINT ck_Registros_Valor_Unitario_Nao_Negativo CHECK (valor_unitario >= 0)
+        FOREIGN KEY (fk_Produto) REFERENCES Produto (id_Produto)
+        ON DELETE CASCADE ON UPDATE CASCADE  
 );
-
 
 -- ====================================================================
 -- 2. INSERTS (DADOS)
@@ -767,270 +697,7 @@ INSERT INTO Registros (id_Registro, fk_Cliente, fk_Cidade_Cliente, fk_Cidade_For
 (299, 5, 2, 2, 7, 69, 1295.75, 6, '2025-04-11', 58, 224, 114, 1),
 (300, 2, 5, 1, 7, 88, 1481.21, 8, '2025-01-12', 1, 4, 66, 1);
 
+-- Ajuste de sequência para garantir que novos registros via sistema utilizem o próximo ID automaticamente:
+SELECT setval(pg_get_serial_sequence('Registros', 'id_registro'), coalesce(max(id_Registro), 1), max(id_Registro) IS NOT null) FROM Registros;
 
--- --------------------------------------------------------------------
--- 3. CORREÇÕES PÓS-CARGA
--- --------------------------------------------------------------------
-
--- Corrige registros em que fk_Produto diverge do produto vinculado ao fk_Estoque.
--- No arquivo enviado, existe pelo menos um caso desse tipo. Essa divergência
--- pode gerar números errados no Power BI quando Produto e Estoque forem usados juntos.
-UPDATE Registros r
-SET fk_Produto = e.fk_Produto
-FROM Estoque e
-WHERE r.fk_Estoque = e.id_Estoque
-  AND r.fk_Produto <> e.fk_Produto;
-
--- Ajusta todas as sequências SERIAL para evitar erro de chave duplicada
--- em inserções futuras.
-SELECT setval(pg_get_serial_sequence('public.cargo', 'id_cargo'), COALESCE((SELECT MAX(id_cargo) FROM cargo), 1), true);
-SELECT setval(pg_get_serial_sequence('public.funcionario', 'id_funcionario'), COALESCE((SELECT MAX(id_funcionario) FROM funcionario), 1), true);
-SELECT setval(pg_get_serial_sequence('public.corredor', 'id_corredor'), COALESCE((SELECT MAX(id_corredor) FROM corredor), 1), true);
-SELECT setval(pg_get_serial_sequence('public.prateleira', 'id_prateleira'), COALESCE((SELECT MAX(id_prateleira) FROM prateleira), 1), true);
-SELECT setval(pg_get_serial_sequence('public.prateleira_corredor', 'id_prateleira_corredor'), COALESCE((SELECT MAX(id_prateleira_corredor) FROM prateleira_corredor), 1), true);
-SELECT setval(pg_get_serial_sequence('public.cidade', 'id_cidade'), COALESCE((SELECT MAX(id_cidade) FROM cidade), 1), true);
-SELECT setval(pg_get_serial_sequence('public.marca', 'id_marca'), COALESCE((SELECT MAX(id_marca) FROM marca), 1), true);
-SELECT setval(pg_get_serial_sequence('public.tipo_movimentacao', 'id_tipo_movimentacao'), COALESCE((SELECT MAX(id_tipo_movimentacao) FROM tipo_movimentacao), 1), true);
-SELECT setval(pg_get_serial_sequence('public.cliente', 'id_cliente'), COALESCE((SELECT MAX(id_cliente) FROM cliente), 1), true);
-SELECT setval(pg_get_serial_sequence('public.categoria', 'id_categoria'), COALESCE((SELECT MAX(id_categoria) FROM categoria), 1), true);
-SELECT setval(pg_get_serial_sequence('public.fornecedor', 'id_fornecedor'), COALESCE((SELECT MAX(id_fornecedor) FROM fornecedor), 1), true);
-SELECT setval(pg_get_serial_sequence('public.produto', 'id_produto'), COALESCE((SELECT MAX(id_produto) FROM produto), 1), true);
-SELECT setval(pg_get_serial_sequence('public.estoque', 'id_estoque'), COALESCE((SELECT MAX(id_estoque) FROM estoque), 1), true);
-SELECT setval(pg_get_serial_sequence('public.registros', 'id_registro'), COALESCE((SELECT MAX(id_registro) FROM registros), 1), true);
-
--- --------------------------------------------------------------------
--- 4. ÍNDICES PARA MELHORAR CONSULTAS E IMPORTAÇÃO NO POWER BI
--- --------------------------------------------------------------------
-CREATE INDEX idx_funcionario_fk_cargo ON Funcionario(fk_cargo);
-CREATE INDEX idx_prateleira_corredor_fk_prateleira ON Prateleira_Corredor(fk_prateleira);
-CREATE INDEX idx_prateleira_corredor_fk_corredor ON Prateleira_Corredor(fk_corredor);
-CREATE INDEX idx_fornecedor_fk_cidade ON Fornecedor(fk_cidade);
-CREATE INDEX idx_produto_fk_categoria ON Produto(fk_categoria);
-CREATE INDEX idx_produto_fk_fornecedor ON Produto(fk_fornecedor);
-CREATE INDEX idx_produto_fk_marca ON Produto(fk_marca);
-CREATE INDEX idx_produto_cod_produto ON Produto(cod_produto);
-CREATE INDEX idx_estoque_fk_produto ON Estoque(fk_produto);
-CREATE INDEX idx_registros_data ON Registros(data_movimentacao);
-CREATE INDEX idx_registros_fk_cliente ON Registros(fk_cliente);
-CREATE INDEX idx_registros_fk_cidade_cliente ON Registros(fk_cidade_cliente);
-CREATE INDEX idx_registros_fk_cidade_fornecedor ON Registros(fk_cidade_fornecedor);
-CREATE INDEX idx_registros_fk_fornecedor ON Registros(fk_fornecedor);
-CREATE INDEX idx_registros_fk_estoque ON Registros(fk_estoque);
-CREATE INDEX idx_registros_fk_produto ON Registros(fk_produto);
-CREATE INDEX idx_registros_fk_prateleira_corredor ON Registros(fk_prateleira_corredor);
-CREATE INDEX idx_registros_fk_tipo_movimentacao ON Registros(fk_tipo_movimentacao);
-CREATE INDEX idx_registros_fk_funcionario ON Registros(fk_funcionario);
-
--- --------------------------------------------------------------------
--- 5. VIEWS PRONTAS PARA O POWER BI
--- Recomendação: no Power BI, carregue principalmente estas views,
--- em vez de carregar todas as tabelas físicas. Isso evita relacionamentos
--- circulares/ambíguos entre Registros, Produto, Estoque, Fornecedor e Cidade.
--- --------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW vw_powerbi_movimentacoes AS
-SELECT
-    r.id_Registro,
-    r.Data_Movimentacao,
-    EXTRACT(YEAR FROM r.Data_Movimentacao)::INTEGER AS Ano,
-    EXTRACT(MONTH FROM r.Data_Movimentacao)::INTEGER AS Mes_Numero,
-    TO_CHAR(r.Data_Movimentacao, 'YYYY-MM') AS Ano_Mes,
-
-    tm.id_Tipo_Movimentacao,
-    tm.Tipo_Movimentacao,
-
-    r.Quantidade,
-    CASE
-        WHEN tm.Tipo_Movimentacao ILIKE 'Sa%' THEN -r.Quantidade
-        ELSE r.Quantidade
-    END AS Quantidade_Com_Sinal,
-
-    r.valor_unitario,
-    (r.Quantidade * r.valor_unitario)::NUMERIC(14,2) AS Valor_Total_Movimentado,
-
-    CASE
-        WHEN tm.Tipo_Movimentacao ILIKE 'Sa%' THEN (r.Quantidade * r.valor_unitario)::NUMERIC(14,2)
-        ELSE 0::NUMERIC(14,2)
-    END AS Faturamento_Saida,
-
-    CASE
-        WHEN tm.Tipo_Movimentacao ILIKE 'En%' THEN (r.Quantidade * r.valor_unitario)::NUMERIC(14,2)
-        ELSE 0::NUMERIC(14,2)
-    END AS Valor_Entrada,
-
-    cli.id_Cliente,
-    cli.Nome_Cliente,
-    cid_cli.Nome_Cidade AS Cidade_Cliente,
-    cid_cli.Nome_Estado AS Estado_Cliente,
-
-    p.id_Produto,
-    p.Cod_Produto,
-    p.Nome_Produto,
-    (p.Cod_Produto || ' - ' || p.Nome_Produto) AS Produto_Rotulo,
-    cat.Nome_Categoria,
-    m.Nome_Marca,
-
-    f_mov.id_Fornecedor AS id_Fornecedor_Movimentacao,
-    f_mov.Nome_Fornecedor AS Fornecedor_Movimentacao,
-    cid_f_mov.Nome_Cidade AS Cidade_Fornecedor_Movimentacao,
-    cid_f_mov.Nome_Estado AS Estado_Fornecedor_Movimentacao,
-
-    f_prod.id_Fornecedor AS id_Fornecedor_Cadastro_Produto,
-    f_prod.Nome_Fornecedor AS Fornecedor_Cadastro_Produto,
-
-    e.id_Estoque,
-    e.Estoque_minimo,
-    e.Estoque_maximo,
-    e.Estoque_atual,
-    (e.Estoque_atual - e.Estoque_minimo) AS Saldo_vs_Estoque_Minimo,
-    CASE
-        WHEN e.Estoque_atual <= e.Estoque_minimo THEN 'Crítico'
-        WHEN e.Estoque_atual <= (e.Estoque_minimo * 1.5) THEN 'Atenção'
-        ELSE 'OK'
-    END AS Status_Estoque,
-
-    fun.id_Funcionario,
-    fun.Nome_Funcionario,
-    cargo.Nome_Cargo,
-
-    prat.id_Prateleira,
-    prat.Nome_Prateleira,
-    corr.id_Corredor,
-    corr.Nome_Corredor,
-
-    r.Observacoes
-FROM Registros r
-INNER JOIN Tipo_Movimentacao tm
-    ON tm.id_Tipo_Movimentacao = r.fk_Tipo_Movimentacao
-INNER JOIN Cliente cli
-    ON cli.id_Cliente = r.fk_Cliente
-INNER JOIN Cidade cid_cli
-    ON cid_cli.id_Cidade = r.fk_Cidade_Cliente
-INNER JOIN Cidade cid_f_mov
-    ON cid_f_mov.id_Cidade = r.fk_Cidade_Fornecedor
-INNER JOIN Fornecedor f_mov
-    ON f_mov.id_Fornecedor = r.fk_Fornecedor
-INNER JOIN Produto p
-    ON p.id_Produto = r.fk_Produto
-INNER JOIN Categoria cat
-    ON cat.Id_Categoria = p.fk_Categoria
-INNER JOIN Marca m
-    ON m.id_Marca = p.fk_Marca
-INNER JOIN Fornecedor f_prod
-    ON f_prod.id_Fornecedor = p.fk_Fornecedor
-INNER JOIN Estoque e
-    ON e.id_Estoque = r.fk_Estoque
-INNER JOIN Funcionario fun
-    ON fun.id_Funcionario = r.fk_Funcionario
-INNER JOIN Cargo cargo
-    ON cargo.id_Cargo = fun.fk_Cargo
-INNER JOIN Prateleira_Corredor pc
-    ON pc.id_Prateleira_Corredor = r.fk_Prateleira_Corredor
-INNER JOIN Prateleira prat
-    ON prat.id_Prateleira = pc.fk_Prateleira
-INNER JOIN Corredor corr
-    ON corr.id_Corredor = pc.fk_Corredor;
-
-CREATE OR REPLACE VIEW vw_powerbi_alerta_estoque AS
-WITH movimentacao_produto AS (
-    SELECT
-        r.fk_Produto,
-        SUM(CASE WHEN tm.Tipo_Movimentacao ILIKE 'Sa%' THEN r.Quantidade ELSE 0 END) AS Total_Saidas,
-        SUM(CASE WHEN tm.Tipo_Movimentacao ILIKE 'En%' THEN r.Quantidade ELSE 0 END) AS Total_Entradas,
-        MAX(CASE WHEN tm.Tipo_Movimentacao ILIKE 'Sa%' THEN r.Data_Movimentacao ELSE NULL END) AS Ultima_Saida,
-        MAX(r.Data_Movimentacao) AS Ultima_Movimentacao
-    FROM Registros r
-    INNER JOIN Tipo_Movimentacao tm
-        ON tm.id_Tipo_Movimentacao = r.fk_Tipo_Movimentacao
-    GROUP BY r.fk_Produto
-),
-data_base AS (
-    SELECT MAX(Data_Movimentacao) AS Data_Base FROM Registros
-)
-SELECT
-    e.id_Estoque,
-    p.id_Produto,
-    p.Cod_Produto,
-    p.Nome_Produto,
-    cat.Nome_Categoria,
-    m.Nome_Marca,
-    f.Nome_Fornecedor AS Fornecedor_Cadastro_Produto,
-    e.Estoque_minimo,
-    e.Estoque_maximo,
-    e.Estoque_atual,
-    (e.Estoque_atual - e.Estoque_minimo) AS Saldo_vs_Estoque_Minimo,
-    CASE
-        WHEN e.Estoque_atual <= e.Estoque_minimo THEN 'Crítico'
-        WHEN e.Estoque_atual <= (e.Estoque_minimo * 1.5) THEN 'Atenção'
-        ELSE 'OK'
-    END AS Status_Estoque,
-    COALESCE(mp.Total_Saidas, 0) AS Total_Saidas,
-    COALESCE(mp.Total_Entradas, 0) AS Total_Entradas,
-    mp.Ultima_Saida,
-    mp.Ultima_Movimentacao,
-    CASE
-        WHEN mp.Ultima_Saida IS NULL THEN NULL
-        ELSE (db.Data_Base - mp.Ultima_Saida)::INTEGER
-    END AS Dias_Sem_Saida_No_Periodo
-FROM Estoque e
-INNER JOIN Produto p
-    ON p.id_Produto = e.fk_Produto
-INNER JOIN Categoria cat
-    ON cat.Id_Categoria = p.fk_Categoria
-INNER JOIN Marca m
-    ON m.id_Marca = p.fk_Marca
-INNER JOIN Fornecedor f
-    ON f.id_Fornecedor = p.fk_Fornecedor
-LEFT JOIN movimentacao_produto mp
-    ON mp.fk_Produto = p.id_Produto
-CROSS JOIN data_base db;
-
-CREATE OR REPLACE VIEW vw_powerbi_calendario AS
-SELECT
-    d::DATE AS Data,
-    EXTRACT(YEAR FROM d)::INTEGER AS Ano,
-    EXTRACT(MONTH FROM d)::INTEGER AS Mes_Numero,
-    TO_CHAR(d, 'TMMonth') AS Mes_Nome,
-    TO_CHAR(d, 'YYYY-MM') AS Ano_Mes,
-    EXTRACT(QUARTER FROM d)::INTEGER AS Trimestre
-FROM generate_series(
-    (SELECT MIN(Data_Movimentacao) FROM Registros),
-    (SELECT MAX(Data_Movimentacao) FROM Registros),
-    INTERVAL '1 day'
-) AS calendario(d);
-
-CREATE OR REPLACE VIEW vw_qualidade_dados AS
-SELECT 'Total de registros' AS Regra, COUNT(*)::NUMERIC AS Resultado FROM Registros
-UNION ALL
-SELECT 'Registros com quantidade zero', COUNT(*)::NUMERIC FROM Registros WHERE Quantidade = 0
-UNION ALL
-SELECT 'Registros com quantidade negativa', COUNT(*)::NUMERIC FROM Registros WHERE Quantidade < 0
-UNION ALL
-SELECT 'Registros com valor unitário negativo', COUNT(*)::NUMERIC FROM Registros WHERE valor_unitario < 0
-UNION ALL
-SELECT 'Divergência entre Registros.fk_Produto e Estoque.fk_Produto', COUNT(*)::NUMERIC
-FROM Registros r
-INNER JOIN Estoque e ON e.id_Estoque = r.fk_Estoque
-WHERE r.fk_Produto <> e.fk_Produto
-UNION ALL
-SELECT 'Códigos de produto repetidos', COUNT(*)::NUMERIC
-FROM (
-    SELECT Cod_Produto
-    FROM Produto
-    GROUP BY Cod_Produto
-    HAVING COUNT(*) > 1
-) s
-UNION ALL
-SELECT 'Produtos sem registro de estoque', COUNT(*)::NUMERIC
-FROM Produto p
-LEFT JOIN Estoque e ON e.fk_Produto = p.id_Produto
-WHERE e.id_Estoque IS NULL;
-
-ANALYZE;
-
-COMMIT;
-
--- Consultas rápidas para conferência:
--- SELECT * FROM vw_qualidade_dados;
--- SELECT * FROM vw_powerbi_movimentacoes LIMIT 20;
--- SELECT * FROM vw_powerbi_alerta_estoque ORDER BY Status_Estoque, Saldo_vs_Estoque_Minimo;
+select * from registros;
