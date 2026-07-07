@@ -1,7 +1,32 @@
+
+-- ====================================================================
+-- SCRIPT CORRIGIDO PARA POSTGRESQL / POWER BI
+-- Projeto Integrador - AutoMax
+-- Baseado no arquivo banco.txt enviado pelo usuário.
+-- ====================================================================
+-- Objetivo:
+-- 1) Criar o banco com nomes/relacionamentos mais consistentes.
+-- 2) Evitar erros comuns no Power BI: relacionamentos ambíguos,
+--    chaves inconsistentes, sequência SERIAL desatualizada e campos
+--    difíceis de consumir.
+-- 3) Criar views prontas para o Power BI.
+--
+-- Como usar:
+-- - Crie o banco manualmente no PostgreSQL, por exemplo: projeto_integrador.
+-- - Conecte-se nesse banco pelo pgAdmin/DBeaver.
+-- - Execute este script inteiro.
+-- - No Power BI, prefira carregar as views que começam com vw_powerbi_.
+-- ====================================================================
+
 BEGIN;
 
-DROP VIEW IF EXISTS view_movimentacoes CASCADE;
-DROP VIEW IF EXISTS view_alerta_estoque CASCADE;
+-- --------------------------------------------------------------------
+-- LIMPEZA PARA PERMITIR REEXECUÇÃO DO SCRIPT
+-- --------------------------------------------------------------------
+DROP VIEW IF EXISTS vw_powerbi_movimentacoes CASCADE;
+DROP VIEW IF EXISTS vw_powerbi_alerta_estoque CASCADE;
+DROP VIEW IF EXISTS vw_powerbi_calendario CASCADE;
+DROP VIEW IF EXISTS vw_qualidade_dados CASCADE;
 
 DROP TABLE IF EXISTS Registros CASCADE;
 DROP TABLE IF EXISTS Estoque CASCADE;
@@ -17,6 +42,13 @@ DROP TABLE IF EXISTS Cidade CASCADE;
 DROP TABLE IF EXISTS Prateleira CASCADE;
 DROP TABLE IF EXISTS Corredor CASCADE;
 DROP TABLE IF EXISTS Cargo CASCADE;
+
+-- --------------------------------------------------------------------
+-- 1. CRIAÇÃO DAS TABELAS
+-- Observação: PostgreSQL transforma nomes não-aspados em minúsculo.
+-- Mantive nomes parecidos com o projeto original, mas corrigi o erro
+-- Id_Prateleria_Corredor -> id_Prateleira_Corredor.
+-- --------------------------------------------------------------------
 
 CREATE TABLE Cargo(
     id_Cargo SERIAL PRIMARY KEY,
@@ -131,6 +163,9 @@ CREATE TABLE Produto(
         FOREIGN KEY (fk_Marca) REFERENCES Marca(id_Marca)
         ON DELETE RESTRICT ON UPDATE CASCADE,
 
+    -- Cod_Produto NÃO foi deixado como UNIQUE porque a base original possui
+    -- códigos repetidos com produtos/categorias/marcas diferentes.
+    -- Para relacionamento no Power BI, use sempre id_Produto.
     CONSTRAINT ck_Produto_Codigo_Nao_Vazio CHECK (length(trim(Cod_Produto)) > 0)
 );
 
@@ -209,6 +244,11 @@ CREATE TABLE Registros(
 );
 
 
+-- ====================================================================
+-- 2. INSERTS (DADOS)
+-- ====================================================================
+
+-- STREAMING_CHUNK:Inserindo dados nas dimensões simples...
 INSERT INTO Cargo (id_Cargo, Nome_Cargo, observacoes) VALUES 
 (1, 'Estoquista', NULL), (2, 'Comprador', NULL), (3, 'Supervisor', NULL);
 
@@ -250,6 +290,7 @@ INSERT INTO Categoria (Id_Categoria, Nome_Categoria, observacoes) VALUES
 (4, 'Arrefecimento', NULL), (5, 'Suspensao', NULL), (6, 'Motor', NULL), 
 (7, 'Sistema de Freios', NULL);
 
+-- STREAMING_CHUNK:Inserindo tabelas com dependências (Funcionário e Fornecedor)...
 INSERT INTO Funcionario (id_Funcionario, Nome_Funcionario, fk_cargo) VALUES 
 (1, 'Joao Santos', 2), (2, 'Lucas Pereira', 1), (3, 'Marcos Rocha', 2), 
 (4, 'Juliana Ribeiro', 2), (5, 'Ana Costa', 3), (6, 'Carlos Silva', 1), 
@@ -261,6 +302,7 @@ INSERT INTO Fornecedor (Id_Fornecedor, Nome_Fornecedor, fk_Cidade, observacoes) 
 (5, 'Distribuidora Master', 5, NULL), (6, 'Pecas Parana', 6, NULL), 
 (7, 'Mecanica Sul', 5, NULL), (8, 'TecAuto', 4, NULL);
 
+-- STREAMING_CHUNK:Inserindo Produtos e Tabela de ligação Prateleira_Corredor...
 INSERT INTO Produto (id_Produto, Cod_Produto, Nome_Produto, fk_Categoria, fk_Fornecedor, fk_Marca) VALUES 
 (1, 'P1022', 'Filtro de Oleo', 1, 1, 1), (2, 'P1003', 'Past. Freio', 2, 2, 1), 
 (3, 'P1039', 'Past. Freio', 1, 3, 2), (4, 'P1047', 'Filtro de Oleo', 3, 4, 1), 
@@ -397,6 +439,7 @@ INSERT INTO Prateleira_Corredor (fk_Prateleira, fk_Corredor) VALUES
 (27, 4), (14, 2), (30, 10), (29, 9), (2, 10), (6, 4), (16, 4), (9, 9), (10, 1), (29, 10), 
 (26, 10), (20, 5);
 
+-- STREAMING_CHUNK:Inserindo dados de Estoque...
 INSERT INTO Estoque (Estoque_minimo, Estoque_maximo, Estoque_atual, fk_Produto, Observacoes) VALUES 
 (50, 500, 274, 4, NULL), (50, 500, 988, 139, NULL), (50, 500, 381, 3, NULL), (50, 500, 1383, 77, NULL), 
 (50, 500, 623, 184, NULL), (50, 500, 0, 177, NULL), (50, 500, 455, 210, NULL), (50, 500, 623, 15, NULL), 
@@ -421,6 +464,7 @@ INSERT INTO Estoque (Estoque_minimo, Estoque_maximo, Estoque_atual, fk_Produto, 
 (50, 500, 0, 161, NULL), (50, 500, 0, 181, NULL), (50, 500, 0, 220, NULL), (50, 500, 0, 191, NULL), 
 (50, 500, 0, 216, NULL), (50, 500, 0, 223, NULL);
 
+-- STREAMING_CHUNK:Inserindo a tabela Fato principal (Registros)...
 INSERT INTO Registros (id_Registro, fk_Cliente, fk_Cidade_Cliente, fk_Cidade_Fornecedor, fk_Fornecedor, Quantidade, valor_unitario, fk_Funcionario, Data_Movimentacao, fk_Estoque, fk_Produto, fk_Prateleira_Corredor, fk_Tipo_Movimentacao) VALUES 
 (1, 1, 1, 1, 1, 10, 578.00, 1, '2025-01-14', 57, 89, 1, 1),
 (2, 2, 4, 2, 2, 2, 483.46, 1, '2025-01-01', 57, 89, 2, 2),
@@ -724,12 +768,21 @@ INSERT INTO Registros (id_Registro, fk_Cliente, fk_Cidade_Cliente, fk_Cidade_For
 (300, 2, 5, 1, 7, 88, 1481.21, 8, '2025-01-12', 1, 4, 66, 1);
 
 
+-- --------------------------------------------------------------------
+-- 3. CORREÇÕES PÓS-CARGA
+-- --------------------------------------------------------------------
+
+-- Corrige registros em que fk_Produto diverge do produto vinculado ao fk_Estoque.
+-- No arquivo enviado, existe pelo menos um caso desse tipo. Essa divergência
+-- pode gerar números errados no Power BI quando Produto e Estoque forem usados juntos.
 UPDATE Registros r
 SET fk_Produto = e.fk_Produto
 FROM Estoque e
 WHERE r.fk_Estoque = e.id_Estoque
   AND r.fk_Produto <> e.fk_Produto;
 
+-- Ajusta todas as sequências SERIAL para evitar erro de chave duplicada
+-- em inserções futuras.
 SELECT setval(pg_get_serial_sequence('public.cargo', 'id_cargo'), COALESCE((SELECT MAX(id_cargo) FROM cargo), 1), true);
 SELECT setval(pg_get_serial_sequence('public.funcionario', 'id_funcionario'), COALESCE((SELECT MAX(id_funcionario) FROM funcionario), 1), true);
 SELECT setval(pg_get_serial_sequence('public.corredor', 'id_corredor'), COALESCE((SELECT MAX(id_corredor) FROM corredor), 1), true);
@@ -745,6 +798,9 @@ SELECT setval(pg_get_serial_sequence('public.produto', 'id_produto'), COALESCE((
 SELECT setval(pg_get_serial_sequence('public.estoque', 'id_estoque'), COALESCE((SELECT MAX(id_estoque) FROM estoque), 1), true);
 SELECT setval(pg_get_serial_sequence('public.registros', 'id_registro'), COALESCE((SELECT MAX(id_registro) FROM registros), 1), true);
 
+-- --------------------------------------------------------------------
+-- 4. ÍNDICES PARA MELHORAR CONSULTAS E IMPORTAÇÃO NO POWER BI
+-- --------------------------------------------------------------------
 CREATE INDEX idx_funcionario_fk_cargo ON Funcionario(fk_cargo);
 CREATE INDEX idx_prateleira_corredor_fk_prateleira ON Prateleira_Corredor(fk_prateleira);
 CREATE INDEX idx_prateleira_corredor_fk_corredor ON Prateleira_Corredor(fk_corredor);
@@ -765,7 +821,14 @@ CREATE INDEX idx_registros_fk_prateleira_corredor ON Registros(fk_prateleira_cor
 CREATE INDEX idx_registros_fk_tipo_movimentacao ON Registros(fk_tipo_movimentacao);
 CREATE INDEX idx_registros_fk_funcionario ON Registros(fk_funcionario);
 
-CREATE OR REPLACE VIEW view_movimentacoes AS
+-- --------------------------------------------------------------------
+-- 5. VIEWS PRONTAS PARA O POWER BI
+-- Recomendação: no Power BI, carregue principalmente estas views,
+-- em vez de carregar todas as tabelas físicas. Isso evita relacionamentos
+-- circulares/ambíguos entre Registros, Produto, Estoque, Fornecedor e Cidade.
+-- --------------------------------------------------------------------
+
+CREATE OR REPLACE VIEW vw_powerbi_movimentacoes AS
 SELECT
     r.id_Registro,
     r.Data_Movimentacao,
@@ -868,7 +931,7 @@ INNER JOIN Prateleira prat
 INNER JOIN Corredor corr
     ON corr.id_Corredor = pc.fk_Corredor;
 
-CREATE OR REPLACE VIEW view_alerta_estoque AS
+CREATE OR REPLACE VIEW vw_powerbi_alerta_estoque AS
 WITH movimentacao_produto AS (
     SELECT
         r.fk_Produto,
@@ -922,10 +985,52 @@ LEFT JOIN movimentacao_produto mp
     ON mp.fk_Produto = p.id_Produto
 CROSS JOIN data_base db;
 
+CREATE OR REPLACE VIEW vw_powerbi_calendario AS
+SELECT
+    d::DATE AS Data,
+    EXTRACT(YEAR FROM d)::INTEGER AS Ano,
+    EXTRACT(MONTH FROM d)::INTEGER AS Mes_Numero,
+    TO_CHAR(d, 'TMMonth') AS Mes_Nome,
+    TO_CHAR(d, 'YYYY-MM') AS Ano_Mes,
+    EXTRACT(QUARTER FROM d)::INTEGER AS Trimestre
+FROM generate_series(
+    (SELECT MIN(Data_Movimentacao) FROM Registros),
+    (SELECT MAX(Data_Movimentacao) FROM Registros),
+    INTERVAL '1 day'
+) AS calendario(d);
+
+CREATE OR REPLACE VIEW vw_qualidade_dados AS
+SELECT 'Total de registros' AS Regra, COUNT(*)::NUMERIC AS Resultado FROM Registros
+UNION ALL
+SELECT 'Registros com quantidade zero', COUNT(*)::NUMERIC FROM Registros WHERE Quantidade = 0
+UNION ALL
+SELECT 'Registros com quantidade negativa', COUNT(*)::NUMERIC FROM Registros WHERE Quantidade < 0
+UNION ALL
+SELECT 'Registros com valor unitário negativo', COUNT(*)::NUMERIC FROM Registros WHERE valor_unitario < 0
+UNION ALL
+SELECT 'Divergência entre Registros.fk_Produto e Estoque.fk_Produto', COUNT(*)::NUMERIC
+FROM Registros r
+INNER JOIN Estoque e ON e.id_Estoque = r.fk_Estoque
+WHERE r.fk_Produto <> e.fk_Produto
+UNION ALL
+SELECT 'Códigos de produto repetidos', COUNT(*)::NUMERIC
+FROM (
+    SELECT Cod_Produto
+    FROM Produto
+    GROUP BY Cod_Produto
+    HAVING COUNT(*) > 1
+) s
+UNION ALL
+SELECT 'Produtos sem registro de estoque', COUNT(*)::NUMERIC
+FROM Produto p
+LEFT JOIN Estoque e ON e.fk_Produto = p.id_Produto
+WHERE e.id_Estoque IS NULL;
+
 ANALYZE;
 
 COMMIT;
 
 -- Consultas rápidas para conferência:
--- SELECT * FROM view_movimentacoes LIMIT 20;
--- SELECT * FROM view_alerta_estoque ORDER BY Status_Estoque, Saldo_vs_Estoque_Minimo;
+-- SELECT * FROM vw_qualidade_dados;
+-- SELECT * FROM vw_powerbi_movimentacoes LIMIT 20;
+-- SELECT * FROM vw_powerbi_alerta_estoque ORDER BY Status_Estoque, Saldo_vs_Estoque_Minimo;
